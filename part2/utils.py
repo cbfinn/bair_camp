@@ -5,9 +5,15 @@ import tensorflow as tf
 from PIL import Image
 
 class Robot(object):
-  def __init__(self, env):
-    self.dim_action = self.env.action_space.shape[0]
-    self.dim_obs = self.env.observation_space.shape[0]
+  def __init__(self, env, dim_action=None, dim_obs=None):
+    if dim_action is None:
+        self.dim_action = self.env.action_space.shape[0]
+    else:
+        self.dim_action = dim_action
+    if dim_obs is None:
+        self.dim_obs = self.env.observation_space.shape[0]
+    else:
+        self.dim_obs = dim_obs
     tf.reset_default_graph()
     self.session = tf.InteractiveSession()
     self.initialize_network()
