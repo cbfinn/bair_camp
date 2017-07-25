@@ -4,6 +4,7 @@ import tensorflow as tf
 
 from PIL import Image
 
+
 class Robot(object):
   def __init__(self, env, dim_action=None, dim_obs=None):
     if dim_action is None:
@@ -15,7 +16,11 @@ class Robot(object):
     else:
         self.dim_obs = dim_obs
     tf.reset_default_graph()
-    self.session = tf.InteractiveSession()
+    try:
+        self.session = tf.InteractiveSession()
+    except(tf.errors.InternalError):
+        # try one more time
+        self.session = tf.InteractiveSession()
     self.initialize_network()
 
   def initialize_network(self, dim_hiddens = (40, 40)):
@@ -53,8 +58,25 @@ class Robot(object):
     return np.flipud(np.array(pil_image))
 
   def get_action(self, obs):
+    if self.name == 'car':
+      obs = self.process_obs(obs)
     obs = np.reshape(obs, (1, -1))
     return self.session.run(self.output, feed_dict={self.obs: obs})
+
+  def get_expert_action(self, obs):
+      """ This is specific to the car. """
+      obs = self.process_obs(obs)
+      action = np.array([obs[0]*10.0/np.pi - obs[1]*0.10])
+      return np.reshape(action, [1,1])
+
+  def process_obs(self, ob):
+    """ need to turn observaion into a vector for the car. """
+    if self.name != 'car':
+      raise ValueError('This function is only for driving example.')
+    angle = ob.angle
+    pos = ob.trackPos
+    obs = np.array([angle, pos])
+    return obs
 
   def _train_step(self, obs, actions):
     batch_size = 32
@@ -66,8 +88,11 @@ class Robot(object):
 
   def _collect_demonstrations(self, num_demos=50):
     # used to generate demonstration pkl files
-    expert_policy = load_policy.load_policy('experts/' + self.env.spec.id + '.pkl', self.session)
-    tf_util.initialize(self.session)
+    if self.name != 'car':
+      expert_policy = load_policy.load_policy('experts/' + self.env.spec.id + '.pkl', self.session)
+      tf_util.initialize(self.session)
+    else:
+      expert_policy = self.get_expert_action
     observations = []
     actions = []
     videos = []
@@ -76,16 +101,22 @@ class Robot(object):
       obs = self.env.reset()
       for t in range(self.max_timesteps):
         # only store videos for 2 trajectories.
-        if len(videos) < self.max_timesteps * 2:
+        if self.name != 'car' and len(videos) < self.max_timesteps * 2:
           videos.append(self.get_image())
-        action = expert_policy(obs[None,:])
+        if self.name == 'car':
+          action = expert_policy(obs)
+          obs = self.process_obs(obs)
+        else:
+          action = expert_policy(obs[None,:])
         observations.append(obs)
         actions.append(action)
         obs, _, _, _ = self.env.step(action)
-    self.expert_video_clip = mpy.ImageSequenceClip(videos, fps=20*2)
     self.expert_data = {'observations': np.array(observations),
                         'actions': np.array(actions),
-                        'video': videos}
+                       }
+    if self.name != 'car':
+        self.expert_video_clip = mpy.ImageSequenceClip(videos, fps=20*2)
+        self.expert_data['video'] = videos
     with open('experts/' + self.name + '_demos.pkl', 'wb') as f:
         pickle.dump(self.expert_data, f)
 

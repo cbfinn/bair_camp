@@ -5,6 +5,7 @@ Look over the class functions below to figure out how!
 """
 import gym
 import moviepy.editor as mpy
+from multiprocessing import Process, Queue
 import numpy as np
 import pickle
 
@@ -31,7 +32,7 @@ class ImitationRobot(Robot):
     else:
       raise ValueError('Unknown robot name')
     self.env = env
-    self.max_timesteps = min(env.spec.timestep_limit, 400)
+    self.max_timesteps = min(env.spec.timestep_limit, 1000)
     self.demos_loaded = False
     super(ImitationRobot, self).__init__(env)
 
@@ -40,7 +41,7 @@ class ImitationRobot(Robot):
     """
     obs = self.env.reset()
     video = []
-    for _ in range(self.max_timesteps):
+    for t in range(self.max_timesteps):
       video.append(self.get_image())
       action = self.get_action(obs)
       obs, _, _, _ = self.env.step(action)
@@ -81,57 +82,54 @@ class ImitationRobot(Robot):
 
 class ImitationCar(Robot):
   """ Car that can imitate. """
-  def __init__(self):
+  def __init__(self, port=3101):
     self.loss = None
     self.name = 'car'
-    self.env = TorcsEnv(vision=True, throttle=False)
-    ob = self.env.reset(relaunch=True)
+    self.env = TorcsEnv(vision=False, throttle=False, port=port)
+    ob = self.env.reset(relaunch=False)
     obs_shape = self.process_obs(ob)
-    self.max_timesteps = 100
+    self.max_timesteps = 1000
     self.demos_loaded = False
     super(ImitationCar, self).__init__(self.env, dim_action=1, dim_obs=2)
 
-  def process_obs(self, ob):
-    angle = ob.angle
-    pos = ob.trackPos
-    obs = np.array([angle, pos])
-    return obs
-
-  def get_action(self, obs):
-      action = np.array([obs[0]*10.0/np.pi - obs[1]*0.10])
-      return np.reshape(action, [1,1])
-
   def run(self, timesteps=None):
-    """ Runs the robot in the environment and returns a video clip.
+    """ Runs the car in the environment and prints how long the car drove without crashing.
     """
     if timesteps is None:
       timesteps = self.max_timesteps
-    obs = self.process_obs(self.env.reset(relaunch=True))
-    video = []
+
+    obs = self.env.reset(relaunch=False)
+    print('The car is driving.')
     for i in range(timesteps):
+      distance_traveled = round(obs.distRaced, 2)
       if i == 0:
         action = np.array([0.0])
       else:
         action = self.get_action(obs)
-      #video.append(self.get_image())
-      obs, _, _, _ = self.env.step(action)
-      obs = self.process_obs(obs)
-    #video_clip = mpy.ImageSequenceClip(video, fps=20*2)
-    #return video_clip
-    return None
+      obs, _, done, _ = self.env.step(action)
+      if done:
+        print('The car drove ' + str(distance_traveled) + ' feet in ' + str(i) + ' timesteps, and then crashed.')
+        break
+      elif i > 0 and i % 100 == 0:
+        print('The car has driven ' + str(distance_traveled) + ' feet in ' + str(i) + ' timesteps.')
+
+    if not done:
+      print('Congrats!! The car drove without crashing.')
+      print('The car drove ' + str(distance_traveled) + ' feet in ' + str(i) + ' timesteps.')
 
 
-  def load_demonstrations(self, num_demos=50):
+  def load_demonstrations(self, num_demos=10):
     """ Loads the specified number of expert demonstrations. """
-    if num_demos > 50:
-        raise ValueError('Specified number of demos must be at most 50.')
+    if num_demos > 10:
+        raise ValueError('Specified number of demos must be at most 10.')
     self.num_demos = num_demos
     with open('experts/' + self.name + '_demos.pkl', 'rb') as f:
       self.expert_data = pickle.load(f)
     self.expert_data['observations'] = self.expert_data['observations'][:num_demos*self.max_timesteps]
     self.expert_data['actions'] = self.expert_data['actions'][:num_demos*self.max_timesteps]
-    self.expert_video_clip = mpy.ImageSequenceClip(self.expert_data['video'], fps=20*2)
-    self.expert_data['video'] = None
+
+    self.expert_video_clip = mpy.VideoFileClip('experts/car_demo.gif')
+    self.expert_video_clip = self.expert_video_clip.cutout(0,5)
     self.demos_loaded = True
 
   def show_demonstrations(self):

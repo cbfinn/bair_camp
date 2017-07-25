@@ -18,15 +18,15 @@ class TorcsEnv:
     initial_reset = True
 
 
-    def __init__(self, vision=False, throttle=False, gear_change=False):
-        print("Init")
+    def __init__(self, port=3101, vision=False, throttle=False, gear_change=False):
         self.vision = vision
         self.throttle = throttle
         self.gear_change = gear_change
+        self.port = port
 
         self.initial_run = True
 
-        os.system('pkill torcs')
+        #os.system('pkill torcs')
         time.sleep(0.5)
         if self.vision is True:
             os.system('torcs -nofuel -nodamage -nolaptime  -vision &')
@@ -126,7 +126,7 @@ class TorcsEnv:
         obs = client.S.d
 
         # Make an obsevation from a raw observation vector from TORCS
-        self.observation = self.make_observaton(obs)
+        self.observation = self.make_observation(obs)
 
         # Reward setting Here #######################################
         # direction-dependent positive reward
@@ -176,17 +176,17 @@ class TorcsEnv:
             ## TENTATIVE. Restarting TORCS every episode suffers the memory leak bug!
             if relaunch is True:
                 self.reset_torcs()
-                print("### TORCS is RELAUNCHED ###")
+                print("### Simulator has been relaunched ###")
 
         # Modify here if you use multiple tracks in the environment
-        self.client = snakeoil3.Client(p=3101, vision=self.vision)  # Open new UDP in vtorcs
+        self.client = snakeoil3.Client(p=self.port, vision=self.vision)  # Open new UDP in vtorcs
         self.client.MAX_STEPS = np.inf
 
         client = self.client
         client.get_servers_input()  # Get the initial input from torcs
 
         obs = client.S.d  # Get the current full-observation from torcs
-        self.observation = self.make_observaton(obs)
+        self.observation = self.make_observation(obs)
 
         self.last_u = None
 
@@ -200,13 +200,13 @@ class TorcsEnv:
         return self.observation
 
     def reset_torcs(self):
-       #print("relaunch torcs")
+        print("relaunch torcs")
         os.system('pkill torcs')
         time.sleep(0.5)
         if self.vision is True:
-            os.system('torcs -nofuel -nodamage -nolaptime -vision &')
+            os.system('torcs -nofuel -nodamage -nolaptime -vision -p '+str(self.port)+'&')
         else:
-            os.system('torcs -nofuel -nodamage -nolaptime &')
+            os.system('torcs -nofuel -nodamage -nolaptime -p'+str(self.port)+'&')
         time.sleep(0.5)
         os.system('sh autostart.sh')
         time.sleep(0.5)
@@ -235,7 +235,7 @@ class TorcsEnv:
         b = np.array(b).reshape(sz)
         return np.array([r, g, b], dtype=np.uint8)
 
-    def make_observaton(self, raw_obs):
+    def make_observation(self, raw_obs):
         if self.vision is False:
             names = ['focus',
                      'speedX', 'speedY', 'speedZ',
@@ -244,7 +244,9 @@ class TorcsEnv:
                      'track',
                      'wheelSpinVel',
                      'angle',
-                     'trackPos']
+                     'trackPos',
+                     'distRaced'
+                     ]
             Observation = col.namedtuple('Observaion', names)
             return Observation(focus=np.array(raw_obs['focus'], dtype=np.float32)/200.,
                                speedX=np.array(raw_obs['speedX'], dtype=np.float32)/self.default_speed,
@@ -255,7 +257,8 @@ class TorcsEnv:
                                track=np.array(raw_obs['track'], dtype=np.float32)/200.,
                                wheelSpinVel=np.array(raw_obs['wheelSpinVel'], dtype=np.float32),
                                angle=np.array(raw_obs['angle'], dtype=np.float32),
-                               trackPos=np.array(raw_obs['trackPos'], dtype=np.float32)
+                               trackPos=np.array(raw_obs['trackPos'], dtype=np.float32),
+                               distRaced=np.array(raw_obs['distRaced'], dtype=np.float32)
                                )
         else:
             names = ['focus',
@@ -267,7 +270,7 @@ class TorcsEnv:
                      'img',
                      'angle',
                      'trackPos']
-            Observation = col.namedtuple('Observaion', names)
+            Observation = col.namedtuple('Observation', names)
 
             # Get RGB from observation
             image_rgb = self.obs_vision_to_image_rgb(raw_obs[names[8]])

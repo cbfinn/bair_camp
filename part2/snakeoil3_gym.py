@@ -125,10 +125,10 @@ class Client():
         self.sid= 'SCR'
         self.maxEpisodes=1 # "Maximum number of learning episodes to perform"
         self.trackname= 'unknown'
-        self.stage= 3 # 0=Warm-up, 1=Qualifying 2=Race, 3=unknown <Default=3>
+        self.stage= 2 # 0=Warm-up, 1=Qualifying 2=Race, 3=unknown <Default=3>
         self.debug= False
-        self.maxSteps= 100000  # 50steps/second
-        self.parse_the_command_line()
+        self.maxSteps= 100000000  # 50steps/second  # used to be 100,000
+        #self.parse_the_command_line()
         if H: self.host= H
         if p: self.port= p
         if i: self.sid= i
@@ -171,13 +171,13 @@ class Client():
                 print("Waiting for server on %d............" % self.port)
                 print("Count Down : " + str(n_fail))
                 if n_fail < 0:
-                    print("relaunch torcs")
-                    os.system('pkill torcs')
+                    #print("relaunch torcs")
+                    #os.system('pkill torcs')
                     time.sleep(1.0)
                     if self.vision is False:
-                        os.system('torcs -nofuel -nodamage -nolaptime &')
+                        os.system('torcs -nofuel -nodamage -nolaptime -vision -p '+str(self.port)+'&')
                     else:
-                        os.system('torcs -nofuel -nodamage -nolaptime -vision &')
+                        os.system('torcs -nofuel -nodamage -nolaptime -p '+str(self.port)+'&')
 
                     time.sleep(1.0)
                     os.system('sh autostart.sh')
@@ -186,7 +186,7 @@ class Client():
 
             identify = '***identified***'
             if identify in sockdata:
-                print("Client connected on %d.............." % self.port)
+                print("Simulator client connected on port %d." % self.port)
                 break
 
     def parse_the_command_line(self):
