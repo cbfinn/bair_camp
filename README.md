@@ -26,4 +26,5 @@ In addition to Python you will need to install some Python libraries to run some
 * moviepy
 * gym
 * mujoco-py (for this you should run `pip install mujoco-py==0.5.7`)
+
 For `part2` you will also need [Mujoco 131](http://www.mujoco.org/index.html). You can get a student license for free.
