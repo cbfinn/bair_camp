@@ -21,6 +21,7 @@ In addition to Python you will need to install some Python libraries to run some
 * seaborn
 
 ### part2
+NOTE: `part2` may be difficult to get working on Windows, compared to Mac or Linux.
 `part2` requires all the `part1` libraries, as well as:
 * tensorflow
 * moviepy
