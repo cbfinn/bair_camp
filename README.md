@@ -22,10 +22,11 @@ In addition to Python you will need to install some Python libraries to run some
 
 ### part2
 NOTE: `part2` may be difficult to get working on Windows, compared to Mac or Linux.
+
 `part2` requires all the `part1` libraries, as well as:
 * tensorflow
 * moviepy
 * gym
 * mujoco-py (for this you should run `pip install mujoco-py==0.5.7`)
 
-For `part2` you will also need [Mujoco 131](http://www.mujoco.org/index.html). You can get a student license for free.
+For `part2` you will also need to install the simulator [Mujoco 131](http://www.mujoco.org/index.html). This is not a Python library, you will need to download it separately from the linked website. You will also need to get a student license (which is free).
