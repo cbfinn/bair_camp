@@ -13,6 +13,7 @@ def get_teacher_action(ob):
     return np.array([steer])
 
 def img_reshape(input_img):
+    print(np.max(input_img))
     _img = np.transpose(input_img, (1, 2, 0))
     _img = np.flipud(_img)
     _img = np.reshape(_img, (1, img_dim[0], img_dim[1], img_dim[2]))
@@ -39,6 +40,7 @@ for i in range(steps):
     if i%100 == 0:
         print(i)
     ob, reward, done, _ = env.step(act)
+    print(np.max(ob.img))
     img_list.append(ob.img)
     action_list.append(act)
     reward_list.append(np.array([reward]))
