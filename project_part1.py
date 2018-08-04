@@ -10,7 +10,7 @@ from gym.envs.mujoco.ant import AntEnv
 from gym.envs.mujoco.hopper import HopperEnv
 from gym.envs.mujoco.walker2d import Walker2dEnv
 
-from ai4all_render import cheetah, ant, hopper, walker
+from mjc_models import cheetah, ant, hopper, walker
 from utils import Robot
 
 class CustomRobot(Robot):

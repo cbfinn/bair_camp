@@ -6,9 +6,7 @@ import tempfile
 import os
 import numpy as np
 
-#from shutil import copyfile, copy2
-
-GYM_PATH = gym.__path__[0][:-4]   #'/home/cfinn/code/gym'
+GYM_PATH = gym.__path__[0][:-4]   
 
 class MJCModel(object):
     def __init__(self, name):

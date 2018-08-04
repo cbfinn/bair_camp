@@ -16,6 +16,9 @@ class Robot(object):
     else:
         self.dim_obs = dim_obs
     tf.reset_default_graph()
+    sess = tf.get_default_session()
+    if sess is not None:
+        sess.close()
     try:
         self.session = tf.InteractiveSession()
     except(tf.errors.InternalError):
