@@ -24,23 +24,28 @@ class Robot(object):
     except(tf.errors.InternalError):
         # try one more time
         self.session = tf.InteractiveSession()
-    self.initialize_network()
+    if self.linear:
+      self.initialize_network(dim_hiddens=())
+    else:
+      self.initialize_network()
 
   def initialize_network(self, dim_hiddens = (40, 40)):
     self.obs = tf.placeholder(tf.float32)
     self.action_label = tf.placeholder(tf.float32)
 
+    # initializer for weight matrices and biases
+    bias_init = tf.constant_initializer(0.1)
+    fc_init = tf.truncated_normal_initializer(stddev=0.1)  # was 0.01
+
     # make weight matrices and biases
     cur_dim = self.dim_obs
     cur_vec = tf.reshape(self.obs, [-1, cur_dim])
-    bias_init = tf.constant_initializer(0.1)
-    fc_init = tf.truncated_normal_initializer(stddev=0.1)  # was 0.01
     for i in range(len(dim_hiddens)):
         w = tf.get_variable('w'+str(i), [cur_dim, dim_hiddens[i]], initializer=fc_init)
         b = tf.get_variable('b'+str(i), [dim_hiddens[i]], initializer=bias_init)
         cur_vec = tf.nn.relu(tf.matmul(cur_vec, w) + b)
         cur_dim = dim_hiddens[i]
-    w = tf.get_variable('wout', [dim_hiddens[-1], self.dim_action], initializer=fc_init)
+    w = tf.get_variable('wout', [cur_dim, self.dim_action], initializer=fc_init)
     b = tf.get_variable('bout', [self.dim_action], initializer=bias_init)
     self.output = tf.matmul(cur_vec, w) + b
 
@@ -58,11 +63,10 @@ class Robot(object):
     self.env.render()
     image = self.env.viewer.get_image()
     pil_image = Image.frombytes('RGB', (image[1], image[2]), image[0])
+    pil_image = pil_image.resize((200, 200), Image.LANCZOS)
     return np.flipud(np.array(pil_image))
 
   def get_action(self, obs):
-    if self.name == 'car':
-      obs = self.process_obs(obs)
     obs = np.reshape(obs, (1, -1))
     return self.session.run(self.output, feed_dict={self.obs: obs})
 
@@ -71,15 +75,6 @@ class Robot(object):
       obs = self.process_obs(obs)
       action = np.array([obs[0]*10.0/np.pi - obs[1]*0.10])
       return np.reshape(action, [1,1])
-
-  def process_obs(self, ob):
-    """ need to turn observaion into a vector for the car. """
-    if self.name != 'car':
-      raise ValueError('This function is only for driving example.')
-    angle = ob.angle
-    pos = ob.trackPos
-    obs = np.array([angle, pos])
-    return obs
 
   def _train_step(self, obs, actions):
     batch_size = 32
@@ -91,7 +86,7 @@ class Robot(object):
 
   def _collect_demonstrations(self, num_demos=50):
     # used to generate demonstration pkl files
-    if self.name != 'car':
+    if self.robot_name != 'car':
       expert_policy = load_policy.load_policy('experts/' + self.env.spec.id + '.pkl', self.session)
       tf_util.initialize(self.session)
     else:
@@ -104,9 +99,9 @@ class Robot(object):
       obs = self.env.reset()
       for t in range(self.max_timesteps):
         # only store videos for 2 trajectories.
-        if self.name != 'car' and len(videos) < self.max_timesteps * 2:
+        if self.robot_name != 'car' and len(videos) < self.max_timesteps * 2 and t % 2 == 0:
           videos.append(self.get_image())
-        if self.name == 'car':
+        if self.robot_name == 'car':
           action = expert_policy(obs)
           obs = self.process_obs(obs)
         else:
@@ -117,10 +112,10 @@ class Robot(object):
     self.expert_data = {'observations': np.array(observations),
                         'actions': np.array(actions),
                        }
-    if self.name != 'car':
-        self.expert_video_clip = mpy.ImageSequenceClip(videos, fps=20*2)
+    if self.robot_name != 'car':
+        self.expert_video_clip = mpy.ImageSequenceClip(videos, fps=20)
         self.expert_data['video'] = videos
-    with open('experts/' + self.name + '_demos.pkl', 'wb') as f:
+    with open('experts/' + self.robot_name + '_demos.pkl', 'wb') as f:
         pickle.dump(self.expert_data, f)
 
 

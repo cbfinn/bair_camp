@@ -14,12 +14,23 @@ from mjc_models import cheetah, ant, hopper, walker
 from utils import Robot
 
 class CustomRobot(Robot):
-  def __init__(self, robot_name):
+  """CustomRobot class for designing and creating simulated robots.
+  """
+
+  def __init__(self, robot_name, params=None, linear=None):
+    """Initialize the robot.
+    Args:
+      robot_name: name of the robot (e.g. hopper, ant, walker, cheetah)
+      params: dictionary of robot body parameters. if None, use defaults.
+      linear: if True, use a linear policy. if False, use a neural network.
+    """
     self.robot_name = robot_name.lower()
     self.env = None
-    self.params = self.get_default_body_params()
+    self.linear = linear
+    if params is None:
+      params = self.get_default_body_params()
     # change_robot_body initializes the env
-    self.change_robot_body(self.params)
+    self.change_robot_body(params)
     self.max_timesteps = 500
     self.action_dim = self.env.action_space.shape[0]
     super(CustomRobot, self).__init__(self.env)
@@ -71,7 +82,7 @@ class CustomRobot(Robot):
     return params
 
   def change_robot_body(self, params):
-    """
+    """Changes the robot body parameters accordingly to the passed in dictionary.
     Args:
       params: dictionary containing the parameters for changing the robot body.
     """
@@ -132,7 +143,7 @@ class CustomRobot(Robot):
 
   def run(self, actions=None, action_durations=None):
     """ Runs the robot in the environment and returns a video clip.
-    Params:
+    Args:
       actions:
         if actions is None, use random actions.
         if actions is a list of scalar numbers, execute the specified action continuously.
@@ -182,6 +193,7 @@ class CustomRobot(Robot):
         if cur_action_id >= len(actions):
           cur_action_id = 0
       obs, _, _, _ = self.env.step(action)
+
     center_of_mass = self.env.get_body_com("torso")[0]
     if center_of_mass > 0:
       print('Done running. Your robot went ' + '{0:.2f}'.format(center_of_mass)
@@ -189,6 +201,7 @@ class CustomRobot(Robot):
     else:
       print('Done running. Your robot went ' + '{0:.2f}'.format(abs(center_of_mass))
               + ' meters backward.')
+
     video_clip = mpy.ImageSequenceClip(video, fps=20)
     return video_clip
 

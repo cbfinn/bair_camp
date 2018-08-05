@@ -10,31 +10,22 @@ import numpy as np
 import pickle
 
 from utils import Robot
+from project_part1 import CustomRobot
 
-class ImitationRobot(Robot):
+class ImitationRobot(CustomRobot):
   """ Robot that can imitate. """
-  def __init__(self, robot_name):
-    self.robot_name = robot_name
+  def __init__(self, robot_name, params=None, linear=True):
+    """Initialize the robot.
+    Args:
+      robot_name: name of the robot (e.g. hopper, ant, walker, cheetah)
+      params: dictionary of robot body parameters. if None, use defaults.
+      linear: if True, use a linear policy. if False, use a neural network.
+    """
     self.loss = None
     self.expert_video_clip = None
-    if 'hopper' in robot_name.lower():
-      env = gym.envs.make('Hopper-v1')
-      self.name = 'hopper'
-    elif 'walker' in robot_name.lower():
-      env = gym.envs.make('Walker2d-v1')
-      self.name = 'walker'
-    elif 'ant' in robot_name.lower():
-      env = gym.envs.make('Ant-v1')
-      self.name = 'ant'
-    elif 'cheetah' in robot_name.lower():
-      env = gym.envs.make('HalfCheetah-v1')
-      self.name = 'cheetah'
-    else:
-      raise ValueError('Unknown robot name')
-    self.env = env
-    self.max_timesteps = min(env.spec.timestep_limit, 1000)
     self.demos_loaded = False
-    super(ImitationRobot, self).__init__(env)
+
+    super(ImitationRobot, self).__init__(robot_name, params, linear)
 
   def run(self):
     """ Runs the robot in the environment and returns a video clip.
@@ -42,31 +33,36 @@ class ImitationRobot(Robot):
     obs = self.env.reset()
     video = []
     for t in range(self.max_timesteps):
-      video.append(self.get_image())
+      if t % 2 == 0:
+        video.append(self.get_image())
       action = self.get_action(obs)
       obs, _, _, _ = self.env.step(action)
-    video_clip = mpy.ImageSequenceClip(video, fps=20*2)
+
+    center_of_mass = self.env.get_body_com("torso")[0]
+    if center_of_mass > 0:
+      print('Done running. Your robot went ' + '{0:.2f}'.format(center_of_mass)
+              + ' meters forward.')
+    else:
+      print('Done running. Your robot went ' + '{0:.2f}'.format(abs(center_of_mass))
+              + ' meters backward.')
+
+    video_clip = mpy.ImageSequenceClip(video, fps=20)
     return video_clip
 
-
-  def load_demonstrations(self, num_demos=50):
-    """ Loads the specified number of expert demonstrations. """
-    if num_demos > 50:
-        raise ValueError('Specified number of demos must be at most 50.')
+  def load_demonstrations(self, num_demos):
+    """ Loads the specified number of expert demonstrations, and returns a video of the expert demonstration trajectories. 
+        The maximum number of demonstrations that can be loaded is 40.
+    """
+    if num_demos > 40:
+        raise ValueError('Specified number of demos must be at most 40.')
     self.num_demos = num_demos
-    with open('experts/' + self.name + '_demos.pkl', 'rb') as f:
+    with open('experts/' + self.robot_name + '_demos.pkl', 'rb') as f:
       self.expert_data = pickle.load(f)
     self.expert_data['observations'] = self.expert_data['observations'][:num_demos*self.max_timesteps]
     self.expert_data['actions'] = self.expert_data['actions'][:num_demos*self.max_timesteps]
-    self.expert_video_clip = mpy.ImageSequenceClip(self.expert_data['video'], fps=20*2)
+    self.expert_video_clip = mpy.ImageSequenceClip(self.expert_data['video'], fps=20)
     self.expert_data['video'] = None
     self.demos_loaded = True
-
-  def show_demonstrations(self):
-    """ Returns a video of the expert demonstration trajectories. """
-    if self.expert_video_clip is None:
-      print('Demonstrations need to be loaded before showing them')
-      return
     return self.expert_video_clip
 
   def set_loss(self, loss_func):
