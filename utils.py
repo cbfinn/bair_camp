@@ -1,6 +1,9 @@
+import moviepy.editor as mpy
 import numpy as np
+np.warnings.filterwarnings('ignore')
 import pickle
 import tensorflow as tf
+import tf_util
 
 from PIL import Image
 
@@ -85,9 +88,11 @@ class Robot(object):
     return error
 
   def _collect_demonstrations(self, num_demos=50):
+    import load_policy
     # used to generate demonstration pkl files
     if self.robot_name != 'car':
-      expert_policy = load_policy.load_policy('experts/' + self.env.spec.id + '.pkl', self.session)
+      #expert_policy = load_policy.load_policy('experts/' + self.env.spec.id + '.pkl', self.session)
+      expert_policy = load_policy.load_policy('experts/' + self.robot_name + '.h5', self.session)
       tf_util.initialize(self.session)
     else:
       expert_policy = self.get_expert_action
@@ -99,7 +104,7 @@ class Robot(object):
       obs = self.env.reset()
       for t in range(self.max_timesteps):
         # only store videos for 2 trajectories.
-        if self.robot_name != 'car' and len(videos) < self.max_timesteps * 2 and t % 2 == 0:
+        if self.robot_name != 'car' and len(videos) < self.max_timesteps/2. and t % 2 == 0:
           videos.append(self.get_image())
         if self.robot_name == 'car':
           action = expert_policy(obs)

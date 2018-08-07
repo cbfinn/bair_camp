@@ -1,6 +1,8 @@
+import numpy as np
+np.warnings.filterwarnings('ignore')
+
 import gym
 import moviepy.editor as mpy
-import numpy as np
 import random
 import string
 import pickle
@@ -204,4 +206,10 @@ class CustomRobot(Robot):
 
     video_clip = mpy.ImageSequenceClip(video, fps=20)
     return video_clip
+
+
+
+if __name__ == '__main__':
+  my_robot = CustomRobot('walker')
+  my_robot._collect_demonstrations()
 

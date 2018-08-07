@@ -1,11 +1,15 @@
 import pickle, tensorflow as tf, tf_util, numpy as np
 
 def load_policy(filename, session=None):
-    with open(filename, 'rb') as f:
-        data = pickle.loads(f.read())
+    import h5py
+    if filename[-2:] == 'h5':
+      data = h5py.File(filename, 'r')['snapshots']['iter0000200']
+    else:
+      with open(filename, 'rb') as f:
+          data = pickle.loads(f.read())
 
     # assert len(data.keys()) == 2
-    nonlin_type = data['nonlin_type']
+    nonlin_type = 'tanh' #data['nonlin_type']
     policy_type = [k for k in data.keys() if k != 'nonlin_type'][0]
 
     assert policy_type == 'GaussianPolicy', 'Policy type {} not supported'.format(policy_type)
@@ -19,12 +23,12 @@ def load_policy(filename, session=None):
         def read_layer(l):
             assert list(l.keys()) == ['AffineLayer']
             assert sorted(l['AffineLayer'].keys()) == ['W', 'b']
-            return l['AffineLayer']['W'].astype(np.float32), l['AffineLayer']['b'].astype(np.float32)
+            return np.asarray(l['AffineLayer']['W']).astype(np.float32), np.asarray(l['AffineLayer']['b']).astype(np.float32)
 
         def apply_nonlin(x):
-            if nonlin_type == 'lrelu':
+            if str(nonlin_type) == 'lrelu':
                 return tf_util.lrelu(x, leak=.01) # openai/imitation nn.py:233
-            elif nonlin_type == 'tanh':
+            elif str(nonlin_type) == 'tanh':
                 return tf.tanh(x)
             else:
                 raise NotImplementedError(nonlin_type)
@@ -35,7 +39,7 @@ def load_policy(filename, session=None):
         obsnorm_meansq = policy_params['obsnorm']['Standardizer']['meansq_1_D']
         obsnorm_stdev = np.sqrt(np.maximum(0, obsnorm_meansq - np.square(obsnorm_mean)))
         #print('obs', obsnorm_mean.shape, obsnorm_stdev.shape)
-        normedobs_bo = (obs_bo - obsnorm_mean) / (obsnorm_stdev + 1e-6) # 1e-6 constant from Standardizer class in nn.py:409 in openai/imitation
+        normedobs_bo = (obs_bo - np.asarray(obsnorm_mean)) / (np.asarray(obsnorm_stdev) + 1e-6) # 1e-6 constant from Standardizer class in nn.py:409 in openai/imitation
 
         curr_activations_bd = normedobs_bo
 
@@ -45,10 +49,12 @@ def load_policy(filename, session=None):
         for layer_name in sorted(layer_params.keys()):
             l = layer_params[layer_name]
             W, b = read_layer(l)
+            W, b = np.asarray(W), np.asarray(b)
             curr_activations_bd = apply_nonlin(tf.matmul(curr_activations_bd, W) + b)
 
         # Output layer
         W, b = read_layer(policy_params['out'])
+        W, b = np.asarray(W), np.asarray(b)
         output_bo = tf.matmul(curr_activations_bd, W) + b
         return output_bo
 
