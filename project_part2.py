@@ -50,13 +50,13 @@ class ImitationRobot(CustomRobot):
     return video_clip
 
   def load_demonstrations(self, num_demos):
-    """ Loads the specified number of expert demonstrations, and returns a video of the expert demonstration trajectories. 
+    """ Loads the specified number of expert demonstrations, and returns a video of the expert demonstration trajectories.
         The maximum number of demonstrations that can be loaded is 40.
     """
     if num_demos > 40:
         raise ValueError('Specified number of demos must be at most 40.')
     self.num_demos = num_demos
-    with open('experts/' + self.robot_name + '_demos.pkl', 'rb') as f:
+    with open('experts/my_' + self.robot_name + '_demos.pkl', 'rb') as f:
       self.expert_data = pickle.load(f)
     self.expert_data['observations'] = self.expert_data['observations'][:num_demos*self.max_timesteps]
     self.expert_data['actions'] = self.expert_data['actions'][:num_demos*self.max_timesteps]

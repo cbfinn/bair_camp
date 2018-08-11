@@ -92,7 +92,8 @@ class Robot(object):
     # used to generate demonstration pkl files
     if self.robot_name != 'car':
       #expert_policy = load_policy.load_policy('experts/' + self.env.spec.id + '.pkl', self.session)
-      expert_policy = load_policy.load_policy('experts/' + self.robot_name + '.h5', self.session)
+      #expert_policy = load_policy.load_policy('experts/' + self.robot_name + '.h5', self.session)
+      expert_policy = load_policy.load_policy('/home/ubuntu/imitation/' + self.robot_name + '.h5', self.session)
       tf_util.initialize(self.session)
     else:
       expert_policy = self.get_expert_action
@@ -100,7 +101,8 @@ class Robot(object):
     actions = []
     videos = []
     for i in range(num_demos):
-      print(i)
+      if i % 5 == 0:
+        print(str(i) + ' demos collected')
       obs = self.env.reset()
       for t in range(self.max_timesteps):
         # only store videos for 2 trajectories.
@@ -114,13 +116,18 @@ class Robot(object):
         observations.append(obs)
         actions.append(action)
         obs, _, _, _ = self.env.step(action)
+      if i % 10 == 0:
+        center_of_mass = self.env.get_body_com("torso")[0]
+        print('Demo ' + self.robot_name + ' went ' + '{0:.2f}'.format(center_of_mass)
+                + ' meters forward.')
+
     self.expert_data = {'observations': np.array(observations),
                         'actions': np.array(actions),
                        }
     if self.robot_name != 'car':
         self.expert_video_clip = mpy.ImageSequenceClip(videos, fps=20)
         self.expert_data['video'] = videos
-    with open('experts/' + self.robot_name + '_demos.pkl', 'wb') as f:
+    with open('experts/my_' + self.robot_name + '_demos.pkl', 'wb') as f:
         pickle.dump(self.expert_data, f)
 
 

@@ -3,7 +3,10 @@ import pickle, tensorflow as tf, tf_util, numpy as np
 def load_policy(filename, session=None):
     import h5py
     if filename[-2:] == 'h5':
-      data = h5py.File(filename, 'r')['snapshots']['iter0000200']
+      snapshots = h5py.File(filename, 'r')['snapshots']
+      last_itr = sorted(list(snapshots.keys()))[-1]
+      print last_itr
+      data = snapshots[last_itr]
     else:
       with open(filename, 'rb') as f:
           data = pickle.loads(f.read())

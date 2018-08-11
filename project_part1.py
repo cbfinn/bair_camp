@@ -6,6 +6,7 @@ import moviepy.editor as mpy
 import random
 import string
 import pickle
+from group_params import *
 
 from gym.envs.mujoco.half_cheetah import HalfCheetahEnv
 from gym.envs.mujoco.ant import AntEnv
@@ -210,6 +211,10 @@ class CustomRobot(Robot):
 
 
 if __name__ == '__main__':
-  my_robot = CustomRobot('walker')
+  my_robot = CustomRobot(g1robot1)
+  my_robot.change_robot_body(g1robot1_params)
   my_robot._collect_demonstrations()
 
+  my_robot = CustomRobot(g1robot2)
+  my_robot.change_robot_body(g1robot2_params)
+  my_robot._collect_demonstrations()
