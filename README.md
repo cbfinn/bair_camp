@@ -2,9 +2,14 @@
 
 Used the `bair_camp` branch of [this gym repo](https://github.com/cbfinn/gym/tree/bair_camp).
 
+The apt-get packages that I installed on ec2 include:
+
+`sudo apt-get install python2.7-dev python-minimal python-pip libglew-dev libxrandr2 libxinerama1 libxi6 libxcursor1`
+
 Installed `mujoco_py==0.5.7`.
 
 I can't remember all of the additional python packages that I installed, but you definitely need jupyter, moviepy, and tensorflow.
+
 
 ### For rendering on EC2 instances
 
