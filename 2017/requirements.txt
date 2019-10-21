@@ -125,7 +125,7 @@ urllib3==1.21.1
 virtualenv==1.11.4
 wcwidth==0.1.7
 webencodings==0.5.1
-Werkzeug==0.12.2
+Werkzeug==0.15.3
 widgetsnbextension==2.0.0
 xdiagnose===3.6.3build2
 xkcdpass==1.11.1
