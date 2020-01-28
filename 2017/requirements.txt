@@ -111,7 +111,7 @@ software-center-aptd-plugins==0.0.0
 ssh-import-id==3.21
 subprocess32==3.2.7
 system-service==0.1.6
-tensorflow-gpu==1.2.1
+tensorflow-gpu==1.15.2
 terminado==0.6
 testpath==0.3.1
 Theano==0.9.0
