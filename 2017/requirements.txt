@@ -14,7 +14,7 @@ command-not-found==0.3
 ConfigArgParse==0.11.0
 configobj==4.7.2
 configparser==3.5.0
-cryptography==1.7.1
+cryptography==3.2
 cycler==0.10.0
 debtagshw==0.1
 decorator==4.0.11
