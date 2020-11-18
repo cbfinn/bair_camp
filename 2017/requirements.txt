@@ -58,7 +58,7 @@ mujoco-py==0.5.7
 nbconvert==5.2.1
 nbformat==4.3.0
 ndg-httpsclient==0.4.2
-notebook==5.0.0
+notebook==6.1.5
 numpy==1.13.1
 oauthlib==0.6.1
 oneconf==0.3.7.14.4.1
